@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import FileRouter from "./routes/File";
+import { ensureDirectoryExists } from "./constants/path";
 async function init() {
   const app = express();
   const PORT = Number(process.env.PORT) || 8000;
@@ -10,6 +11,7 @@ async function init() {
       origin: "*",
     })
   );
+   await ensureDirectoryExists();
 
   app.use(FileRouter);
 
