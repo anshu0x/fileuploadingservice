@@ -12,4 +12,6 @@ FileRouter.delete("/deleteAll", FileController.DELETE_ALL_FILES);
 
 FileRouter.delete("/delete/:id", FileController.DELETE_SINGLE_FILES);
 
+FileRouter.get("/read_dir_all_files", FileController.READ_DIR_ALL_FILES);
+
 export default FileRouter

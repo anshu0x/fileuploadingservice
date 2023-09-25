@@ -74,4 +74,14 @@ export default class FileController {
       res.status(500).json({ error: "Server error" });
     }
   };
+
+  static READ_DIR_ALL_FILES = async (req: Request, res: Response) => {
+    try {
+      const files = await fs.readdir(file_upload_location);
+      res.json({ files });
+    } catch (error) {
+      console.error("Error reading directory:", error);
+      throw error;
+    }
+  };
 }
