@@ -10,7 +10,7 @@ export default class FileController {
   static UPLOAD_FILE = async (req: Request, res: Response) => {
     try {
       const { buffer } = req.file as any;
-      const fileName = `${Math.floor(Date.now() * 1e4 * Math.random())}.webp`;
+      const fileName = `${Number(Math.floor(Date.now() * 1e4 * Math.random()))}.webp`;
       const processedBuffer = await sharp(buffer)
         .webp({ quality: 100 })
         .toBuffer();
@@ -93,6 +93,10 @@ export default class FileController {
   static DELETE_SINGLE_FILES = async (req: Request, res: Response) => {
     const fileId = req.params.id;
     try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
       fs.readdir(file_upload_location).then((files) => {
         const fileExists = files.find((file) => file.startsWith(fileId));
         if (fileExists) {
