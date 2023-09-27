@@ -6,41 +6,45 @@ import { createWriteStream } from "node:fs";
 import { lookup } from "mrmime";
 import sharp from "sharp";
 import { validationResult } from "express-validator";
+import { Readable } from "stream";
+import { createReadStream } from "fs";
 export default class FileController {
   static UPLOAD_FILE = async (req: Request, res: Response) => {
     try {
       const { buffer } = req.file as any;
-      const fileName = `${Number(Math.floor(Date.now() * 1e4 * Math.random()))}.webp`;
-      const processedBuffer = await sharp(buffer)
-        .webp({ quality: 100 })
-        .toBuffer();
+      const fileName = `${Number(
+        Math.floor(Date.now() * 1e4 * Math.random())
+      )}.webp`;
+
       const writableStream = createWriteStream(
         path.join(file_upload_location, fileName)
       );
-      writableStream.write(processedBuffer);
-      writableStream.end();
-      writableStream.once("finish", () => {
+
+      const transformer = sharp().webp({ quality: 100 });
+
+      // Create a Readable stream from the buffer and pipe it through Sharp
+      const readableStream = new Readable();
+      readableStream.push(buffer);
+      readableStream.push(null); // End the stream
+
+      readableStream.pipe(transformer).pipe(writableStream);
+
+      writableStream.on("finish", () => {
         res.status(201).json({
           message: "File Uploaded successfully !",
           id: fileName,
         });
       });
+
       writableStream.on("error", (error) => {
-        throw new Error("failed to upload file");
+        throw new Error("Failed to upload file");
       });
     } catch (error) {
       res.status(500).json({ error: "Server error" });
     }
   };
   static GET_SINGLE_FILE = async (
-    req: Request<
-      {
-        id: string;
-      },
-      {},
-      {},
-      { quality: number }
-    >,
+    req: Request<{ id: string }, {}, {}, { quality: number }>,
     res: Response
   ) => {
     const fileId = req.params.id;
@@ -54,20 +58,21 @@ export default class FileController {
       if (fileExists) {
         const filePath = path.join(file_upload_location, fileExists);
         const quality = Number(req.query.quality) || 100;
-        const fileStream = sharp(filePath).webp({ quality });
-        let ContentType = lookup(fileExists) as string;
-        res.writeHead(200, {
-          "Content-Type": ContentType,
-          "Cache-Control": "public, max-age=3600",
-          "X-Image-Quality": quality,
-        });
-        fileStream.pipe(res);
+
+        res.setHeader('Content-Type', lookup(fileExists) || 'application/octet-stream');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        res.setHeader('X-Image-Quality', String(quality));
+
+        const readStream = createReadStream(filePath);
+        const transformStream = sharp().webp({ quality });
+
+        readStream.pipe(transformStream).pipe(res);
       } else {
-        res.status(404).json({ error: "File not found" });
+        res.status(404).json({ error: 'File not found' });
       }
     } catch (error) {
-      console.error("Error reading directory:", error);
-      res.status(500).json({ error: "Server error" });
+      console.error('Error reading directory:', error);
+      res.status(500).json({ error: 'Server error' });
     }
   };
 

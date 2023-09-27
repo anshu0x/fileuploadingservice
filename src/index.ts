@@ -1,15 +1,14 @@
 import express from "express";
 import cors from "cors";
 import FileRouter from "./routes/File";
-import compression from "compression";
 import { ensureDirectoryExists } from "./constants/path";
 async function init() {
   const app = express();
   const PORT = Number(process.env.PORT) || 8000;
-  app.use(express.json());
-  app.use(compression({
-    level:9
-  }));
+// Increase the response size limit to 10MB
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
   app.use(
     cors({
       origin: "*",
